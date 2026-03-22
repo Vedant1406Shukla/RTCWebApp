@@ -72,6 +72,7 @@ body {
   margin-bottom: 0.5rem;
   background: linear-gradient(to right, #818cf8, #c084fc);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -186,6 +187,72 @@ button:disabled {
   gap: 1.5rem;
   flex: 1;
   min-height: 0;
+  position: relative;
+}
+
+.video-grid.has-maximized {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 250px;
+  display: flex;
+  flex-direction: column-reverse; /* Stack upwards from bottom */
+  gap: 1rem;
+  z-index: 110;
+}
+
+.video-wrapper.maximized {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+  border-radius: 0;
+  background: var(--bg-gradient-start);
+  margin: 0;
+}
+
+.video-grid.has-maximized .video-wrapper:not(.maximized) {
+  height: 170px;
+  width: 100%;
+  border: 2px solid var(--primary);
+  z-index: 120;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: unset;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+.video-grid.has-maximized .video-wrapper:not(.maximized):hover {
+  transform: scale(1.05);
+  border-color: var(--primary-hover);
+}
+
+.maximize-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 40;
+  backdrop-filter: blur(4px);
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.maximize-btn:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .video-wrapper {
@@ -234,6 +301,16 @@ button:disabled {
   border-radius: 20px;
   border: 1px solid var(--border);
   backdrop-filter: blur(8px);
+  position: relative;
+  z-index: 120;
+}
+
+.video-call-container.has-maximized .controls {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120;
 }
 
 .status-text {
@@ -263,7 +340,7 @@ button:disabled {
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: none; }
 }
 
 /* Responsive adjustments */
