@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 
-// const SOCKET_SERVER_URL = 'http://localhost:5001'; // Flask backend URL
 const SOCKET_SERVER_URL = import.meta.env.VITE_SOCKET_SERVER_URL || 'http://localhost:5001';
 const VideoCall = ({ roomId, userName, onLeave }) => {
   const [stream, setStream] = useState(null);
