@@ -11,6 +11,7 @@ const VideoCall = ({ roomId, userName, onLeave }) => {
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [maximizedVideo, setMaximizedVideo] = useState(null);
+  const [captions, setCaptions] = useState([]);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -18,6 +19,8 @@ const VideoCall = ({ roomId, userName, onLeave }) => {
   const socketRef = useRef(null);
   const localStreamRef = useRef(null);
   const screenStreamRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const processorRef = useRef(null);
 
   const STUN_SERVERS = {
     iceServers: [
@@ -38,6 +41,28 @@ const VideoCall = ({ roomId, userName, onLeave }) => {
         }
 
         socketRef.current.emit('join', { room: roomId, userName });
+
+        try {
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+          audioContextRef.current = audioCtx;
+          const sourceNode = audioCtx.createMediaStreamSource(currentStream);
+          const processorNode = audioCtx.createScriptProcessor(4096, 1, 1);
+          processorRef.current = processorNode;
+          
+          sourceNode.connect(processorNode);
+          processorNode.connect(audioCtx.destination);
+          
+          processorNode.onaudioprocess = (e) => {
+            const inputData = e.inputBuffer.getChannelData(0);
+            socketRef.current.emit('audio-pcm', {
+              room: roomId,
+              userName: userName,
+              audio: inputData.buffer
+            });
+          };
+        } catch (err) {
+          console.error("Failed to initialize local audio transcription", err);
+        }
       })
       .catch((err) => {
         console.error("Error accessing media devices.", err);
@@ -70,7 +95,23 @@ const VideoCall = ({ roomId, userName, onLeave }) => {
       }
     });
 
+    socketRef.current.on('caption', (data) => {
+      setCaptions(prev => {
+        const newCaptions = [...prev, data].slice(-3);
+        return newCaptions;
+      });
+      
+      clearTimeout(window.captionTimeout);
+      window.captionTimeout = setTimeout(() => {
+        setCaptions([]);
+      }, 5000);
+    });
+
     return () => {
+      if (processorRef.current) processorRef.current.disconnect();
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(console.error);
+      }
       if (stream) stream.getTracks().forEach(track => track.stop());
       if (screenStreamRef.current) screenStreamRef.current.getTracks().forEach(track => track.stop());
       if (peerConnectionRef.current) {
@@ -345,6 +386,16 @@ const VideoCall = ({ roomId, userName, onLeave }) => {
           End Call
         </button>
       </div>
+
+      {captions.length > 0 && (
+        <div className="captions-container">
+          {captions.map((cap, index) => (
+            <div key={index} className="caption-line">
+              <span className="caption-caller">{cap.userName}</span>: {cap.text}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
